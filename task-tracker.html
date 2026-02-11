@@ -17,7 +17,7 @@
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding: 80px 40px;
+    padding: 32px 40px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -251,8 +251,16 @@
   }
 
   .task-row.completed .task-status-input {
-    color: #2a2a2a;
+    color: #2a2a2a !important;
   }
+
+  /* Status colors */
+  .task-status-input.status-pending  { color: #ff9f0a; }
+  .task-status-input.status-waiting  { color: #bf5af2; }
+  .task-status-input.status-due      { color: #ff453a; }
+  .task-status-input.status-done     { color: #30d158; }
+  .task-status-input.status-blocked  { color: #ff6961; }
+  .task-status-input.status-custom   { color: #64d2ff; }
 
   /* --- Status Autocomplete --- */
   .status-wrapper {
@@ -434,14 +442,7 @@
 
 <div class="container">
   <h1>Tasks</h1>
-  <div class="header-row">
-    <span></span>
-    <span>Title</span>
-    <span style="text-align:center;">Status</span>
-    <span style="text-align:right; padding-right:16px;">Due</span>
-    <span></span>
-  </div>
-  <div id="task-list"></div>
+<div id="task-list"></div>
   <div class="add-row" id="add-row">
     <span></span>
     <span class="add-label">+ New task</span>
@@ -462,6 +463,27 @@ const addSectionBtn = document.getElementById('add-section');
 
 // --- Status autocomplete ---
 const statusSuggestions = new Set(['Pending', 'Waiting', 'Due']);
+
+const statusColorMap = {
+  pending: 'status-pending',
+  waiting: 'status-waiting',
+  due: 'status-due',
+  done: 'status-done',
+  blocked: 'status-blocked',
+};
+
+function applyStatusColor(input) {
+  // Remove all status color classes
+  input.classList.remove('status-pending', 'status-waiting', 'status-due', 'status-done', 'status-blocked', 'status-custom');
+  const val = input.value.trim().toLowerCase();
+  if (!val) return;
+  const cls = statusColorMap[val];
+  if (cls) {
+    input.classList.add(cls);
+  } else {
+    input.classList.add('status-custom');
+  }
+}
 
 function collectStatuses() {
   taskList.querySelectorAll('.task-status-input').forEach(input => {
@@ -484,6 +506,7 @@ function createStatusField(row, statusValue = '') {
   input.className = 'task-status-input';
   input.placeholder = 'Status';
   input.value = statusValue;
+  applyStatusColor(input);
 
   const dropdown = document.createElement('div');
   dropdown.className = 'status-dropdown';
@@ -505,6 +528,7 @@ function createStatusField(row, statusValue = '') {
       opt.addEventListener('mousedown', (e) => {
         e.preventDefault();
         input.value = s;
+        applyStatusColor(input);
         dropdown.classList.remove('visible');
         saveTasks();
       });
@@ -523,12 +547,14 @@ function createStatusField(row, statusValue = '') {
   });
 
   input.addEventListener('input', () => {
+    applyStatusColor(input);
     showDropdown(input.value.trim());
     saveTasks();
   });
 
   input.addEventListener('blur', () => {
     hideDropdown();
+    applyStatusColor(input);
     const val = input.value.trim();
     if (val) statusSuggestions.add(val);
     setTimeout(saveTasks, 50);
@@ -548,6 +574,7 @@ function createStatusField(row, statusValue = '') {
       e.preventDefault();
       if (activeIndex >= 0 && options[activeIndex]) {
         input.value = options[activeIndex].textContent;
+        applyStatusColor(input);
         hideDropdown();
         saveTasks();
       } else {
@@ -559,6 +586,7 @@ function createStatusField(row, statusValue = '') {
       hideDropdown();
       if (activeIndex >= 0 && options[activeIndex]) {
         input.value = options[activeIndex].textContent;
+        applyStatusColor(input);
         saveTasks();
       }
     } else if (e.key === 'Escape') {
@@ -1004,8 +1032,9 @@ function driftCompletedToBottom() {
 }
 
 // --- Persistent Storage ---
+// Uses window.storage (injected API) if available, falls back to localStorage
 
-async function saveTasks() {
+function serializeTasks() {
   const children = taskList.children;
   const items = [];
   for (const child of children) {
@@ -1028,40 +1057,65 @@ async function saveTasks() {
       }
     }
   }
+  return JSON.stringify(items);
+}
+
+async function saveTasks() {
+  const json = serializeTasks();
+  // Try window.storage first (injected API from host environment)
+  if (window.storage && typeof window.storage.set === 'function') {
+    try {
+      await window.storage.set('tasks', json);
+      return;
+    } catch (e) { /* fall through to localStorage */ }
+  }
+  // Fallback to localStorage
   try {
-    await window.storage.set('tasks', JSON.stringify(items));
+    localStorage.setItem('tasktrak_tasks', json);
   } catch (e) {
-    console.log('Storage unavailable, using in-memory only');
+    console.log('No storage available');
   }
 }
 
 async function loadTasks() {
-  try {
-    const result = await window.storage.get('tasks');
-    const items = JSON.parse(result.value);
-    if (items && items.length > 0) {
-      items.forEach(item => {
-        if (item.type === 'section') {
-          const row = createSectionRow(item.label);
-          taskList.appendChild(row);
-        } else {
-          // Support legacy format (no type field)
-          if (item.status) statusSuggestions.add(item.status);
-          const row = createTaskRow(
-            item.title || '',
-            item.date || '',
-            item.priority || '',
-            item.note || '',
-            item.completed || false,
-            item.status || ''
-          );
-          taskList.appendChild(row);
-        }
-      });
-      return true;
-    }
-  } catch (e) {
-    // No saved tasks or storage unavailable
+  let items = null;
+
+  // Try window.storage first
+  if (window.storage && typeof window.storage.get === 'function') {
+    try {
+      const result = await window.storage.get('tasks');
+      items = JSON.parse(result.value);
+    } catch (e) { /* fall through */ }
+  }
+
+  // Fallback to localStorage
+  if (!items) {
+    try {
+      const raw = localStorage.getItem('tasktrak_tasks');
+      if (raw) items = JSON.parse(raw);
+    } catch (e) { /* no storage */ }
+  }
+
+  if (items && items.length > 0) {
+    items.forEach(item => {
+      if (item.type === 'section') {
+        const row = createSectionRow(item.label);
+        taskList.appendChild(row);
+      } else {
+        // Support legacy format (no type field)
+        if (item.status) statusSuggestions.add(item.status);
+        const row = createTaskRow(
+          item.title || '',
+          item.date || '',
+          item.priority || '',
+          item.note || '',
+          item.completed || false,
+          item.status || ''
+        );
+        taskList.appendChild(row);
+      }
+    });
+    return true;
   }
   return false;
 }
