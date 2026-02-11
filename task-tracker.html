@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tasks</title>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@200;300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    color: #f5f5f7;
+    font-family: 'Outfit', -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    font-weight: 200;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 80px 40px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 960px;
+  }
+
+  h1 {
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 48px;
+  }
+
+  .header-row {
+    display: grid;
+    grid-template-columns: 12px 1fr 140px 200px 40px;
+    gap: 0;
+    padding: 0 0 16px 0;
+    border-bottom: 1px solid #1a1a1a;
+    margin-bottom: 8px;
+  }
+
+  .header-row span {
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #444;
+  }
+
+  /* --- Section Headers --- */
+  .section-row {
+    padding: 32px 0 12px 0;
+    border-bottom: 1px solid #1a1a1a;
+    animation: fadeIn 0.4s ease forwards;
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label {
+    background: none;
+    border: none;
+    outline: none;
+    color: #555;
+    font-family: 'Outfit', -apple-system, 'SF Pro Display', sans-serif;
+    font-weight: 300;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    width: 100%;
+  }
+
+  .section-label::placeholder {
+    color: #2a2a2a;
+  }
+
+  .section-delete-btn {
+    background: none;
+    border: none;
+    color: #1a1a1a;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .section-row:hover .section-delete-btn {
+    color: #444;
+  }
+
+  .section-delete-btn:hover {
+    color: #ff453a !important;
+  }
+
+  /* --- Task Rows --- */
+  .task-row {
+    display: grid;
+    grid-template-columns: 12px 1fr 140px 200px 40px;
+    gap: 0;
+    align-items: center;
+    padding: 18px 0;
+    border-bottom: 1px solid #0d0d0d;
+    transition: border-color 0.3s ease, opacity 0.4s ease;
+    animation: fadeIn 0.4s ease forwards;
+    opacity: 0;
+    cursor: grab;
+  }
+
+  .task-row:hover {
+    border-bottom-color: #1a1a1a;
+  }
+
+  .task-row.dragging {
+    opacity: 0.3;
+    cursor: grabbing;
+  }
+
+  .drag-over-top {
+    border-top: 2px solid #333 !important;
+  }
+
+  .drag-over-bottom {
+    border-bottom: 2px solid #333 !important;
+  }
+
+  .task-row.completed .task-title-input {
+    text-decoration: line-through;
+    color: #333;
+  }
+
+  .task-row.completed .task-date-input {
+    color: #2a2a2a;
+  }
+
+  .task-row.completed {
+    opacity: 0.4;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  /* --- Priority Dot --- */
+  .priority-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    flex-shrink: 0;
+    justify-self: center;
+    background: transparent;
+    /* invisible idle state, but show ring on row hover */
+  }
+
+  .task-row:hover .priority-dot:not(.orange):not(.red) {
+    box-shadow: 0 0 0 1.5px #333;
+  }
+
+  .priority-dot:hover {
+    transform: scale(1.6);
+    box-shadow: 0 0 0 1.5px #555 !important;
+  }
+
+  .priority-dot.orange {
+    background: #ff9f0a;
+  }
+
+  .priority-dot.red {
+    background: #ff453a;
+  }
+
+  /* --- Inputs --- */
+  .task-title-input,
+  .task-date-input {
+    background: none;
+    border: none;
+    outline: none;
+    color: #f5f5f7;
+    font-family: 'Outfit', -apple-system, 'SF Pro Display', sans-serif;
+    font-weight: 200;
+    font-size: 28px;
+    width: 100%;
+    transition: color 0.3s ease;
+  }
+
+  .task-title-input {
+    cursor: pointer;
+  }
+
+  .task-title-input:focus {
+    cursor: text;
+  }
+
+  .task-title-input::placeholder,
+  .task-date-input::placeholder {
+    color: #222;
+    transition: color 0.3s ease;
+  }
+
+  .task-title-input:focus::placeholder,
+  .task-date-input:focus::placeholder {
+    color: #333;
+  }
+
+  .task-date-input {
+    font-size: 22px;
+    color: #666;
+    text-align: right;
+    padding-right: 16px;
+  }
+
+  /* --- Overdue Date --- */
+  .task-date-input.overdue {
+    color: #c45a3a;
+  }
+
+  .task-row.completed .task-date-input.overdue {
+    color: #2a2a2a;
+  }
+
+  /* --- Status Input --- */
+  .task-status-input {
+    background: none;
+    border: none;
+    outline: none;
+    color: #555;
+    font-family: 'Outfit', -apple-system, 'SF Pro Display', sans-serif;
+    font-weight: 300;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    width: 100%;
+    text-align: center;
+    transition: color 0.3s ease;
+  }
+
+  .task-status-input::placeholder {
+    color: #222;
+    transition: color 0.3s ease;
+  }
+
+  .task-status-input:focus::placeholder {
+    color: #333;
+  }
+
+  .task-row.completed .task-status-input {
+    color: #2a2a2a;
+  }
+
+  /* --- Status Autocomplete --- */
+  .status-wrapper {
+    position: relative;
+  }
+
+  .status-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 6px;
+    margin-top: 4px;
+    padding: 4px 0;
+    z-index: 100;
+    display: none;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .status-dropdown.visible {
+    display: block;
+  }
+
+  .status-option {
+    padding: 6px 12px;
+    font-family: 'Outfit', -apple-system, 'SF Pro Display', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    color: #888;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .status-option:hover,
+  .status-option.active {
+    background: #1a1a1a;
+    color: #ccc;
+  }
+
+  /* --- Inline Notes --- */
+  .note-field {
+    grid-column: 2 / 5;
+    background: none;
+    border: none;
+    outline: none;
+    color: #444;
+    font-family: 'Outfit', -apple-system, 'SF Pro Display', sans-serif;
+    font-weight: 200;
+    font-size: 16px;
+    width: 100%;
+    padding: 8px 0 0 24px;
+    resize: none;
+    overflow: hidden;
+    line-height: 1.5;
+    min-height: 28px;
+  }
+
+  .note-field::placeholder {
+    color: #222;
+  }
+
+  .task-row.has-note {
+    grid-template-rows: auto auto;
+  }
+
+  /* --- Delete Button --- */
+  .delete-btn {
+    background: none;
+    border: none;
+    color: #1a1a1a;
+    font-size: 18px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+  }
+
+  .task-row:hover .delete-btn {
+    color: #444;
+  }
+
+  .delete-btn:hover {
+    color: #ff453a !important;
+  }
+
+  /* --- Add Row --- */
+  .add-row {
+    display: grid;
+    grid-template-columns: 12px 1fr 140px 200px 40px;
+    gap: 0;
+    align-items: center;
+    padding: 18px 0;
+    cursor: text;
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+  }
+
+  .add-row:hover {
+    opacity: 0.7;
+  }
+
+  .add-label {
+    font-size: 28px;
+    font-weight: 200;
+    color: #333;
+    user-select: none;
+    grid-column: 2;
+  }
+
+  /* --- Add Section Button --- */
+  .add-section-row {
+    padding: 12px 0;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    user-select: none;
+  }
+
+  .container:hover .add-section-row {
+    opacity: 0.3;
+  }
+
+  .add-section-row:hover {
+    opacity: 0.6 !important;
+  }
+
+  .add-section-label {
+    font-size: 12px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #444;
+  }
+
+  /* --- Keyboard Hint --- */
+  .kbd-hint {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    color: #2a2a2a;
+  }
+
+  .kbd-hint kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    border: 1px solid #222;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 10px;
+    margin: 0 2px;
+  }
+
+  /* --- Date Group Dividers --- */
+  .date-divider {
+    padding: 24px 0 8px 0;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #333;
+    border-bottom: 1px solid #141414;
+    animation: fadeIn 0.4s ease forwards;
+    opacity: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Tasks</h1>
+  <div class="header-row">
+    <span></span>
+    <span>Title</span>
+    <span style="text-align:center;">Status</span>
+    <span style="text-align:right; padding-right:16px;">Due</span>
+    <span></span>
+  </div>
+  <div id="task-list"></div>
+  <div class="add-row" id="add-row">
+    <span></span>
+    <span class="add-label">+ New task</span>
+  </div>
+  <div class="add-section-row" id="add-section">
+    <span class="add-section-label">+ Section</span>
+  </div>
+</div>
+
+<div class="kbd-hint">
+  <kbd>Tab</kbd> to move between fields · <kbd>Enter</kbd> to advance · <kbd>Shift+Enter</kbd> note
+</div>
+
+<script>
+const taskList = document.getElementById('task-list');
+const addRow = document.getElementById('add-row');
+const addSectionBtn = document.getElementById('add-section');
+
+// --- Status autocomplete ---
+const statusSuggestions = new Set(['Pending', 'Waiting', 'Due']);
+
+function collectStatuses() {
+  taskList.querySelectorAll('.task-status-input').forEach(input => {
+    const val = input.value.trim();
+    if (val) statusSuggestions.add(val);
+  });
+}
+
+function getFilteredSuggestions(query) {
+  const q = query.toLowerCase();
+  return Array.from(statusSuggestions).filter(s => s.toLowerCase().includes(q) && s.toLowerCase() !== q);
+}
+
+function createStatusField(row, statusValue = '') {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'status-wrapper';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'task-status-input';
+  input.placeholder = 'Status';
+  input.value = statusValue;
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'status-dropdown';
+
+  let activeIndex = -1;
+
+  function showDropdown(filter = '') {
+    const suggestions = filter ? getFilteredSuggestions(filter) : Array.from(statusSuggestions);
+    if (suggestions.length === 0) {
+      dropdown.classList.remove('visible');
+      return;
+    }
+    dropdown.innerHTML = '';
+    activeIndex = -1;
+    suggestions.forEach((s, i) => {
+      const opt = document.createElement('div');
+      opt.className = 'status-option';
+      opt.textContent = s;
+      opt.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        input.value = s;
+        dropdown.classList.remove('visible');
+        saveTasks();
+      });
+      dropdown.appendChild(opt);
+    });
+    dropdown.classList.add('visible');
+  }
+
+  function hideDropdown() {
+    dropdown.classList.remove('visible');
+    activeIndex = -1;
+  }
+
+  input.addEventListener('focus', () => {
+    showDropdown(input.value.trim());
+  });
+
+  input.addEventListener('input', () => {
+    showDropdown(input.value.trim());
+    saveTasks();
+  });
+
+  input.addEventListener('blur', () => {
+    hideDropdown();
+    const val = input.value.trim();
+    if (val) statusSuggestions.add(val);
+    setTimeout(saveTasks, 50);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    const options = dropdown.querySelectorAll('.status-option');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, options.length - 1);
+      options.forEach((o, i) => o.classList.toggle('active', i === activeIndex));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      options.forEach((o, i) => o.classList.toggle('active', i === activeIndex));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0 && options[activeIndex]) {
+        input.value = options[activeIndex].textContent;
+        hideDropdown();
+        saveTasks();
+      } else {
+        // Move to date field
+        const dateInput = row.querySelector('.task-date-input');
+        if (dateInput) dateInput.focus();
+      }
+    } else if (e.key === 'Tab') {
+      hideDropdown();
+      if (activeIndex >= 0 && options[activeIndex]) {
+        input.value = options[activeIndex].textContent;
+        saveTasks();
+      }
+    } else if (e.key === 'Escape') {
+      hideDropdown();
+    }
+  });
+
+  wrapper.appendChild(input);
+  wrapper.appendChild(dropdown);
+  return wrapper;
+}
+
+// --- Date parsing ---
+
+function parseNaturalDate(input) {
+  if (!input || !input.trim()) return '';
+  const text = input.trim().toLowerCase();
+  const now = new Date();
+  const year = now.getFullYear();
+
+  if (text === 'today') return formatDate(now);
+  if (text === 'tomorrow' || text === 'tmr' || text === 'tmrw') {
+    const d = new Date(now); d.setDate(d.getDate() + 1); return formatDate(d);
+  }
+  if (text === 'yesterday') {
+    const d = new Date(now); d.setDate(d.getDate() - 1); return formatDate(d);
+  }
+
+  const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const shortDays = ['sun','mon','tue','wed','thu','fri','sat'];
+  const nextMatch = text.match(/^(?:next\s+)?(\w+)$/);
+  if (nextMatch) {
+    let dayIdx = days.indexOf(nextMatch[1]);
+    if (dayIdx === -1) dayIdx = shortDays.indexOf(nextMatch[1]);
+    if (dayIdx !== -1) {
+      const d = new Date(now);
+      const diff = (dayIdx - d.getDay() + 7) % 7 || 7;
+      d.setDate(d.getDate() + diff);
+      return formatDate(d);
+    }
+  }
+
+  const inMatch = text.match(/^in\s+(\d+)\s+(day|days|week|weeks)$/);
+  if (inMatch) {
+    const d = new Date(now);
+    const n = parseInt(inMatch[1]);
+    if (inMatch[2].startsWith('week')) d.setDate(d.getDate() + n * 7);
+    else d.setDate(d.getDate() + n);
+    return formatDate(d);
+  }
+
+  const months = {
+    jan:0,january:0,feb:1,february:1,mar:2,march:2,apr:3,april:3,
+    may:4,jun:5,june:5,jul:6,july:6,aug:7,august:7,sep:8,sept:8,
+    september:8,oct:9,october:9,nov:10,november:10,dec:11,december:11
+  };
+
+  const mdMatch = text.match(/^(\w+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{2,4}))?$/);
+  if (mdMatch) {
+    const mIdx = months[mdMatch[1]];
+    if (mIdx !== undefined) {
+      let y = mdMatch[3] ? (mdMatch[3].length === 2 ? 2000 + parseInt(mdMatch[3]) : parseInt(mdMatch[3])) : year;
+      const d = new Date(y, mIdx, parseInt(mdMatch[2]));
+      if (d < now && !mdMatch[3]) d.setFullYear(y + 1);
+      return formatDate(d);
+    }
+  }
+
+  const dmMatch = text.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+(\w+)(?:\s*,?\s*(\d{2,4}))?$/);
+  if (dmMatch) {
+    const mIdx = months[dmMatch[2]];
+    if (mIdx !== undefined) {
+      let y = dmMatch[3] ? (dmMatch[3].length === 2 ? 2000 + parseInt(dmMatch[3]) : parseInt(dmMatch[3])) : year;
+      const d = new Date(y, mIdx, parseInt(dmMatch[1]));
+      if (d < now && !dmMatch[3]) d.setFullYear(y + 1);
+      return formatDate(d);
+    }
+  }
+
+  const slashMatch = text.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (slashMatch) {
+    let y = slashMatch[3] ? (slashMatch[3].length === 2 ? 2000 + parseInt(slashMatch[3]) : parseInt(slashMatch[3])) : year;
+    const d = new Date(y, parseInt(slashMatch[1]) - 1, parseInt(slashMatch[2]));
+    if (d < now && !slashMatch[3]) d.setFullYear(y + 1);
+    return formatDate(d);
+  }
+
+  return input.trim();
+}
+
+function formatDate(d) {
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return monthNames[d.getMonth()] + ' ' + d.getDate();
+}
+
+function parseDateBack(str) {
+  if (!str || !str.trim()) return null;
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const m = str.match(/^(\w+)\s+(\d+)$/);
+  if (!m) return null;
+  const mIdx = monthNames.indexOf(m[1]);
+  if (mIdx === -1) return null;
+  const now = new Date();
+  let d = new Date(now.getFullYear(), mIdx, parseInt(m[2]));
+  // If the date is far in the past (> 6 months ago), assume next year
+  const sixMonthsAgo = new Date(now);
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  if (d < sixMonthsAgo) d.setFullYear(d.getFullYear() + 1);
+  return d;
+}
+
+function isOverdue(dateStr) {
+  const d = parseDateBack(dateStr);
+  if (!d) return false;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return d < now;
+}
+
+// --- Priority cycling ---
+
+function cyclePriority(dot) {
+  if (dot.classList.contains('red')) {
+    dot.classList.remove('red');
+    dot.dataset.priority = '';
+  } else if (dot.classList.contains('orange')) {
+    dot.classList.remove('orange');
+    dot.classList.add('red');
+    dot.dataset.priority = 'red';
+  } else {
+    dot.classList.add('orange');
+    dot.dataset.priority = 'orange';
+  }
+  saveTasks();
+}
+
+// --- Note field ---
+
+function createNoteField(row, noteText = '') {
+  let note = row.querySelector('.note-field');
+  if (note) {
+    note.focus();
+    return note;
+  }
+  note = document.createElement('textarea');
+  note.className = 'note-field';
+  note.placeholder = 'Note...';
+  note.value = noteText;
+  note.rows = 1;
+  row.classList.add('has-note');
+  row.appendChild(note);
+
+  const autoResize = () => {
+    note.style.height = 'auto';
+    note.style.height = note.scrollHeight + 'px';
+  };
+  note.addEventListener('input', () => { autoResize(); saveTasks(); });
+  setTimeout(autoResize, 0);
+
+  note.addEventListener('blur', () => {
+    if (!note.value.trim()) {
+      row.classList.remove('has-note');
+      note.remove();
+      saveTasks();
+    }
+  });
+
+  note.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      note.blur();
+    }
+  });
+
+  return note;
+}
+
+// --- Section Headers ---
+
+function createSectionRow(label = '') {
+  const row = document.createElement('div');
+  row.className = 'section-row';
+  row.dataset.type = 'section';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'section-label';
+  input.placeholder = 'Section name...';
+  input.value = label;
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'section-delete-btn';
+  delBtn.innerHTML = '&times;';
+
+  input.addEventListener('input', saveTasks);
+  input.addEventListener('blur', () => {
+    if (!input.value.trim()) {
+      row.style.transition = 'opacity 0.25s ease';
+      row.style.opacity = '0';
+      setTimeout(() => { row.remove(); saveTasks(); }, 250);
+    }
+  });
+
+  delBtn.addEventListener('click', () => {
+    row.style.transition = 'opacity 0.25s ease';
+    row.style.opacity = '0';
+    setTimeout(() => { row.remove(); saveTasks(); }, 250);
+  });
+
+  row.appendChild(input);
+  row.appendChild(delBtn);
+  return row;
+}
+
+// --- Task Row ---
+
+function createTaskRow(title = '', date = '', priority = '', note = '', completed = false, status = '') {
+  const row = document.createElement('div');
+  row.className = 'task-row';
+  row.dataset.type = 'task';
+  row.draggable = true;
+
+  // Priority dot
+  const dot = document.createElement('div');
+  dot.className = 'priority-dot' + (priority ? ' ' + priority : '');
+  dot.dataset.priority = priority || '';
+  dot.addEventListener('click', (e) => {
+    e.stopPropagation();
+    cyclePriority(dot);
+  });
+
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.className = 'task-title-input';
+  titleInput.placeholder = 'What needs doing?';
+  titleInput.value = title;
+
+  // Status field
+  const statusWrapper = createStatusField(row, status);
+
+  const dateInput = document.createElement('input');
+  dateInput.type = 'text';
+  dateInput.className = 'task-date-input';
+  dateInput.placeholder = 'When';
+  dateInput.value = date;
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'delete-btn';
+  deleteBtn.innerHTML = '&times;';
+  deleteBtn.setAttribute('aria-label', 'Delete task');
+
+  // Overdue check
+  const checkOverdue = () => {
+    if (isOverdue(dateInput.value) && !row.classList.contains('completed')) {
+      dateInput.classList.add('overdue');
+    } else {
+      dateInput.classList.remove('overdue');
+    }
+  };
+  checkOverdue();
+
+  // Title click to toggle complete (only when not actively editing and has content)
+  titleInput.addEventListener('mousedown', (e) => {
+    if (document.activeElement !== titleInput && titleInput.value.trim()) {
+      e.preventDefault();
+      toggleComplete(row);
+    }
+  });
+
+  // Double click to edit
+  titleInput.addEventListener('dblclick', () => {
+    titleInput.focus();
+    titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
+  });
+
+  // Parse date on blur
+  dateInput.addEventListener('blur', () => {
+    dateInput.value = parseNaturalDate(dateInput.value);
+    checkOverdue();
+  });
+
+  // Enter on date creates new row, Shift+Enter opens note
+  dateInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      const noteField = createNoteField(row);
+      noteField.focus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      dateInput.value = parseNaturalDate(dateInput.value);
+      checkOverdue();
+      const newRow = createTaskRow();
+      if (row.nextSibling) {
+        taskList.insertBefore(newRow, row.nextSibling);
+      } else {
+        taskList.appendChild(newRow);
+      }
+      newRow.querySelector('.task-title-input').focus();
+    }
+  });
+
+  // Shift+Enter on title opens note, Enter goes to status
+  titleInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      const noteField = createNoteField(row);
+      noteField.focus();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const statusInput = row.querySelector('.task-status-input');
+      if (statusInput) statusInput.focus();
+      else dateInput.focus();
+    }
+  });
+
+  // Delete row
+  deleteBtn.addEventListener('click', () => {
+    row.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    row.style.opacity = '0';
+    row.style.transform = 'translateX(-20px)';
+    setTimeout(() => { row.remove(); saveTasks(); }, 250);
+  });
+
+  // Drag events
+  row.addEventListener('dragstart', (e) => {
+    row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+    // Delay so the dragging class applies visually
+    requestAnimationFrame(() => row.classList.add('dragging'));
+  });
+
+  row.addEventListener('dragend', () => {
+    row.classList.remove('dragging');
+    clearDropIndicators();
+    saveTasks();
+  });
+
+  row.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const dragging = taskList.querySelector('.dragging');
+    if (!dragging || dragging === row) return;
+    clearDropIndicators();
+    const rect = row.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    if (e.clientY < mid) {
+      row.classList.add('drag-over-top');
+    } else {
+      row.classList.add('drag-over-bottom');
+    }
+  });
+
+  row.addEventListener('dragleave', () => {
+    row.classList.remove('drag-over-top', 'drag-over-bottom');
+  });
+
+  row.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const dragging = taskList.querySelector('.dragging');
+    if (!dragging || dragging === row) return;
+    const rect = row.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    if (e.clientY < mid) {
+      taskList.insertBefore(dragging, row);
+    } else {
+      taskList.insertBefore(dragging, row.nextSibling);
+    }
+    clearDropIndicators();
+    saveTasks();
+  });
+
+  row.appendChild(dot);
+  row.appendChild(titleInput);
+  row.appendChild(statusWrapper);
+  row.appendChild(dateInput);
+  row.appendChild(deleteBtn);
+
+  // Set completed state
+  if (completed) {
+    row.classList.add('completed');
+    checkOverdue();
+  }
+
+  // Restore note if present
+  if (note) {
+    createNoteField(row, note);
+  }
+
+  return row;
+}
+
+function clearDropIndicators() {
+  taskList.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
+    el.classList.remove('drag-over-top', 'drag-over-bottom');
+  });
+}
+
+// --- Toggle completion ---
+
+function toggleComplete(row) {
+  const wasCompleted = row.classList.contains('completed');
+  row.classList.toggle('completed');
+
+  const dateInput = row.querySelector('.task-date-input');
+  if (row.classList.contains('completed')) {
+    dateInput.classList.remove('overdue');
+  } else if (isOverdue(dateInput.value)) {
+    dateInput.classList.add('overdue');
+  }
+
+  saveTasks();
+
+  // Drift completed tasks to bottom after a moment
+  if (!wasCompleted) {
+    setTimeout(() => {
+      driftCompletedToBottom();
+    }, 600);
+  }
+}
+
+function driftCompletedToBottom() {
+  const rows = Array.from(taskList.children);
+  const completedTasks = rows.filter(r => r.dataset.type === 'task' && r.classList.contains('completed'));
+  const other = rows.filter(r => !(r.dataset.type === 'task' && r.classList.contains('completed')));
+
+  // Only reorder if there are completed tasks mixed in with uncompleted
+  let needsReorder = false;
+  let seenCompleted = false;
+  for (const r of rows) {
+    if (r.dataset.type === 'task' && r.classList.contains('completed')) {
+      seenCompleted = true;
+    } else if (r.dataset.type === 'task' && seenCompleted) {
+      needsReorder = true;
+      break;
+    }
+  }
+
+  if (needsReorder) {
+    other.forEach(r => taskList.appendChild(r));
+    completedTasks.forEach(r => taskList.appendChild(r));
+    saveTasks();
+  }
+}
+
+// --- Persistent Storage ---
+
+async function saveTasks() {
+  const children = taskList.children;
+  const items = [];
+  for (const child of children) {
+    if (child.dataset.type === 'section') {
+      items.push({
+        type: 'section',
+        label: child.querySelector('.section-label').value
+      });
+    } else if (child.dataset.type === 'task') {
+      const title = child.querySelector('.task-title-input').value;
+      const date = child.querySelector('.task-date-input').value;
+      const priority = child.querySelector('.priority-dot').dataset.priority || '';
+      const statusEl = child.querySelector('.task-status-input');
+      const status = statusEl ? statusEl.value : '';
+      const noteEl = child.querySelector('.note-field');
+      const note = noteEl ? noteEl.value : '';
+      const completed = child.classList.contains('completed');
+      if (title || date || note) {
+        items.push({ type: 'task', title, date, priority, note, completed, status });
+      }
+    }
+  }
+  try {
+    await window.storage.set('tasks', JSON.stringify(items));
+  } catch (e) {
+    console.log('Storage unavailable, using in-memory only');
+  }
+}
+
+async function loadTasks() {
+  try {
+    const result = await window.storage.get('tasks');
+    const items = JSON.parse(result.value);
+    if (items && items.length > 0) {
+      items.forEach(item => {
+        if (item.type === 'section') {
+          const row = createSectionRow(item.label);
+          taskList.appendChild(row);
+        } else {
+          // Support legacy format (no type field)
+          if (item.status) statusSuggestions.add(item.status);
+          const row = createTaskRow(
+            item.title || '',
+            item.date || '',
+            item.priority || '',
+            item.note || '',
+            item.completed || false,
+            item.status || ''
+          );
+          taskList.appendChild(row);
+        }
+      });
+      return true;
+    }
+  } catch (e) {
+    // No saved tasks or storage unavailable
+  }
+  return false;
+}
+
+// Auto-save on any input change
+function attachSaveListeners(row) {
+  const inputs = row.querySelectorAll('input, textarea');
+  inputs.forEach(input => {
+    input.addEventListener('input', saveTasks);
+    input.addEventListener('blur', () => setTimeout(saveTasks, 50));
+  });
+}
+
+// Patch createTaskRow to attach save listeners
+const _origCreateTask = createTaskRow;
+createTaskRow = function(title, date, priority, note, completed, status) {
+  const row = _origCreateTask(title, date, priority, note, completed, status);
+  attachSaveListeners(row);
+  return row;
+};
+
+const _origCreateSection = createSectionRow;
+createSectionRow = function(label) {
+  const row = _origCreateSection(label);
+  attachSaveListeners(row);
+  return row;
+};
+
+// Click add row to create new task
+addRow.addEventListener('click', () => {
+  const row = createTaskRow();
+  taskList.appendChild(row);
+  const titleInput = row.querySelector('.task-title-input');
+  titleInput.focus();
+  // Allow immediate typing (bypass the toggle-complete mousedown)
+  setTimeout(() => titleInput.focus(), 10);
+});
+
+// Click add section
+addSectionBtn.addEventListener('click', () => {
+  const row = createSectionRow();
+  taskList.appendChild(row);
+  row.querySelector('.section-label').focus();
+});
+
+// Also allow drag on sections
+taskList.addEventListener('dragover', (e) => {
+  e.preventDefault();
+});
+
+// Load saved tasks, or start with one empty row
+loadTasks().then(loaded => {
+  if (!loaded) {
+    const first = createTaskRow();
+    taskList.appendChild(first);
+    setTimeout(() => {
+      const titleInput = first.querySelector('.task-title-input');
+      titleInput.focus();
+      // Need to let the title input be editable right away for first task
+    }, 100);
+  }
+  // Check all overdue dates on load
+  taskList.querySelectorAll('.task-date-input').forEach(input => {
+    if (isOverdue(input.value)) {
+      const row = input.closest('.task-row');
+      if (row && !row.classList.contains('completed')) {
+        input.classList.add('overdue');
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
