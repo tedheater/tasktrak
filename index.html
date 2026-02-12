@@ -684,6 +684,145 @@
     animation: fadeIn 0.4s ease forwards;
     opacity: 0;
   }
+
+  @media (max-width: 820px) {
+    body {
+      padding: 20px 16px 88px;
+    }
+
+    .container {
+      max-width: 100%;
+    }
+
+    h1 {
+      margin-bottom: 28px;
+    }
+
+    .header-row {
+      grid-template-columns: minmax(0, 1fr) 90px 72px;
+      gap: 8px;
+      padding: 0 0 12px 30px;
+    }
+
+    .header-row span:first-child,
+    .header-row span:last-child {
+      display: none;
+    }
+
+    .header-row span[data-sort="date"] {
+      padding-right: 0 !important;
+    }
+
+    .task-row,
+    .add-row {
+      grid-template-columns: 12px minmax(0, 1fr) auto;
+      row-gap: 8px;
+      align-items: start;
+      padding: 14px 0;
+    }
+
+    .task-row {
+      cursor: default;
+    }
+
+    .priority-dot {
+      margin-top: 8px;
+    }
+
+    .task-title-cell {
+      grid-column: 2;
+      grid-row: 1;
+      gap: 10px;
+    }
+
+    .status-wrapper {
+      grid-column: 2;
+      grid-row: 2;
+      min-width: 0;
+    }
+
+    .task-date-input {
+      grid-column: 3;
+      grid-row: 2;
+      width: auto;
+      min-width: 72px;
+      padding-right: 0;
+      text-align: right;
+      align-self: center;
+      font-size: 16px;
+    }
+
+    .delete-btn {
+      grid-column: 3;
+      grid-row: 1;
+      color: #555;
+    }
+
+    .task-title-input {
+      font-size: 20px;
+    }
+
+    .task-status-input {
+      text-align: left;
+      font-size: 16px;
+    }
+
+    .add-label {
+      font-size: 20px;
+    }
+
+    .section-label,
+    .note-field,
+    #status-manager-new,
+    .status-manager-item input {
+      font-size: 16px;
+    }
+
+    .note-field {
+      grid-column: 2 / 4;
+      padding: 4px 0 0 0;
+      font-size: 15px;
+    }
+
+    .task-complete-btn {
+      width: 20px;
+      height: 20px;
+      opacity: 0.95;
+      border-color: #4a4a4a;
+    }
+
+    .container:hover .add-section-row,
+    .add-section-row {
+      opacity: 0.55;
+    }
+
+    .status-manager-panel {
+      width: min(92vw, 340px);
+      max-height: 75vh;
+      padding: 18px;
+    }
+
+    .kbd-hint {
+      display: none;
+    }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .delete-btn,
+    .section-delete-btn {
+      color: #555;
+    }
+
+    .task-complete-btn {
+      border-color: #4a4a4a;
+      opacity: 0.95;
+    }
+
+    .container:hover .add-section-row,
+    .add-section-row {
+      opacity: 0.55;
+    }
+  }
 </style>
 </head>
 <body>
@@ -739,6 +878,7 @@ const addSectionBtn = document.getElementById('add-section');
 const exportDataBtn = document.getElementById('export-data-btn');
 const importDataBtn = document.getElementById('import-data-btn');
 const importFileInput = document.getElementById('import-file-input');
+const disableDragReorder = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
 // --- Status autocomplete ---
 const DEFAULT_STATUSES = ['Pending', 'Waiting', 'Due'];
@@ -1113,7 +1253,7 @@ function createTaskRow(title = '', date = '', priority = '', note = '', complete
   const row = document.createElement('div');
   row.className = 'task-row';
   row.dataset.type = 'task';
-  row.draggable = true;
+  row.draggable = !disableDragReorder;
 
   // Priority dot
   const dot = document.createElement('div');
